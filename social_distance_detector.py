@@ -52,8 +52,26 @@ if config.USE_GPU:
             break
         # resize the frame and then detect people (and only people) in it
         frame = imutils.resize(frame, width=700)
-        results = detect_people(frame, net, ln,
-                                personIdx=LABELS.index("person"))
+        results = detect_people(frame, net, ln, personIdx=LABELS.index("person"))
         # initialize the set of indexes that violate the minimum social
         # distance
         violate = set()
+
+        # ensure there are *at least* two people detections (required in
+        # order to compute our pairwise distance maps)
+        if len(results) >= 2:
+            # extract all centroids from the results and compute the
+            # Euclidean distances between all pairs of the centroids
+            centroids = np.array([r[2] for r in results])
+            D = dist.cdist(centroids, centroids, metric="euclidean")
+            # loop over the upper triangular of the distance matrix
+            for i in range(0, D.shape[0]):
+                for j in range(i + 1, D.shape[1]):
+                    # check to see if the distance between any two
+                    # centroid pairs is less than the configured number
+                    # of pixels
+                    if D[i, j] < config.MIN_DISTANCE:
+                        # update our violation set with the indexes of
+                        # the centroid pairs
+                        violate.add(i)
+                        violate.add(j)
