@@ -41,3 +41,19 @@ if config.USE_GPU:
     print("[INFO] accessing video stream...")
     vs = cv2.VideoCapture(args["input"] if args["input"] else 0)
     writer = None
+
+    # loop over the frames from the video stream
+    while True:
+        # read the next frame from the file
+        (grabbed, frame) = vs.read()
+        # if the frame was not grabbed, then we have reached the end
+        # of the stream
+        if not grabbed:
+            break
+        # resize the frame and then detect people (and only people) in it
+        frame = imutils.resize(frame, width=700)
+        results = detect_people(frame, net, ln,
+                                personIdx=LABELS.index("person"))
+        # initialize the set of indexes that violate the minimum social
+        # distance
+        violate = set()
